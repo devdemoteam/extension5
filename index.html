@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Persistent Editable Checklist</title>
+  <style>
+    body {
+      font-family: Tahoma, sans-serif;
+      margin: 40px;
+      text-align: center;
+    }
+    #taskInput {
+      padding: 10px;
+      width: 300px;
+      font-size: 16px;
+    }
+    #addBtn {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-left: 10px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #addBtn:hover {
+      background-color: #218838;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      max-width: 500px;
+      margin: 30px auto;
+      text-align: left;
+    }
+    li {
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      display: flex;
+      align-items: center;
+    }
+    li.completed span {
+      text-decoration: line-through;
+      color: gray;
+    }
+    li span {
+      margin-left: 10px;
+      flex-grow: 1;
+      cursor: pointer;
+    }
+    li input[type="text"] {
+      flex-grow: 1;
+      margin-left: 10px;
+      font-size: 16px;
+      padding: 5px;
+    }
+    .deleteBtn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      margin-left: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .deleteBtn:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>My Checklist</h1>
+
+  <input type="text" id="taskInput" placeholder="Enter a new task...">
+  <button id="addBtn">Add Task</button>
+
+  <ul id="taskList"></ul>
+
+  <script>
+    const taskInput = document.getElementById('taskInput');
+    const taskList = document.getElementById('taskList');
+    const addBtn = document.getElementById('addBtn');
+
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+    function saveTasks() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function renderTasks() {
+      taskList.innerHTML = '';
+      tasks.forEach((task, index) => {
+        const li = document.createElement('li');
+        if (task.completed) li.classList.add('completed');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = task.completed;
+        checkbox.addEventListener('change', () => {
+          task.completed = checkbox.checked;
+          saveTasks();
+          renderTasks();
+        });
+
+        const span = document.createElement('span');
+        span.textContent = task.text;
+        span.addEventListener('click', () => {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = task.text;
+          li.replaceChild(input, span);
+          input.focus();
+
+          input.addEventListener('blur', () => {
+            task.text = input.value.trim() || 'Untitled Task';
+            saveTasks();
+            renderTasks();
+          });
+
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') input.blur();
+          });
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.className = 'deleteBtn';
+        deleteBtn.addEventListener('click', () => {
+          tasks.splice(index, 1);
+          saveTasks();
+          renderTasks();
+        });
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(deleteBtn);
+        taskList.appendChild(li);
+      });
+    }
+
+    function addTask() {
+      const text = taskInput.value.trim();
+      if (text === '') return;
+      tasks.push({ text, completed: false });
+      saveTasks();
+      renderTasks();
+      taskInput.value = '';
+    }
+
+    addBtn.addEventListener('click', addTask);
+    taskInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addTask();
+    });
+
+    renderTasks();
+  </script>
+
+</body>
